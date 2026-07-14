@@ -1,17 +1,12 @@
 package com.example.employee.repository;
 
-import com.example.employee.entity.Employee;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.example.employee.entity.Employee;
+
 @Repository
-public class EmployeeRepository {
-
-    public Employee findEmployee() {
-
-        return new Employee(
-                1,
-                "Gautham",
-                "IT");
-    }
+public interface EmployeeRepository
+        extends JpaRepository<Employee, Long> {
 
 }

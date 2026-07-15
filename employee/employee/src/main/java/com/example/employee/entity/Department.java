@@ -1,16 +1,20 @@
 package com.example.employee.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "employees")
-public class Employee {
+@Table(name = "departments")
+public class Department {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,17 +22,16 @@ public class Employee {
 
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "department_id")
-    private Department department;
+    @JsonIgnore
+    @OneToMany(mappedBy = "department")
+    private List<Employee> employees = new ArrayList<>();
 
-    public Employee() {
+    public Department() {
     }
 
-    public Employee(Long id, String name, Department department) {
+    public Department(Long id, String name) {
         this.id = id;
         this.name = name;
-        this.department = department;
     }
 
     public Long getId() {
@@ -45,13 +48,5 @@ public class Employee {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Department getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(Department department) {
-        this.department = department;
     }
 }

@@ -5,15 +5,19 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.example.employee.entity.Employee;
+import com.example.employee.kafka.KafkaProducerService;
 import com.example.employee.repository.EmployeeRepository;
 
 @Service
 public class EmployeeService {
 
     private final EmployeeRepository repository;
+    private final KafkaProducerService kafkaProducerService;
 
-    public EmployeeService(EmployeeRepository repository) {
-        this.repository = repository;
+    public EmployeeService(EmployeeRepository repository,
+                       KafkaProducerService kafkaProducerService) {
+    this.repository = repository;
+    this.kafkaProducerService = kafkaProducerService;
     }
 
     public Employee getEmployee(Long id) {
@@ -25,7 +29,12 @@ public class EmployeeService {
     }
 
     public Employee saveEmployee(Employee employee) {
-    return repository.save(employee);
+
+    Employee savedEmployee = repository.save(employee);
+
+    kafkaProducerService.sendEmployee(savedEmployee);
+
+    return savedEmployee;
     }
 
     public String deleteEmployee(Long id) {
@@ -54,12 +63,12 @@ public class EmployeeService {
     return repository.save(existingEmployee);
     }
 
-    public List<Employee> getEmployeesByDepartment(String department) {
-    return repository.findByDepartment(department);
+    public List<Employee> getEmployees(String department) {
+        return repository.findByDepartment_Name(department);
     }
 
-    public List<Employee> getEmployees(String department) {
-        return repository.getEmployees(department); 
+    public List<Employee> getEmployeesByDepartment(String department) {
+    return repository.findByDepartment_Name(department);
     }
 
 }

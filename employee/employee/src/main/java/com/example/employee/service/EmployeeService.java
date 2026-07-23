@@ -2,73 +2,124 @@ package com.example.employee.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.example.employee.dto.EmployeeRequestDTO;
+import com.example.employee.dto.EmployeeResponseDTO;
+import com.example.employee.entity.Department;
 import com.example.employee.entity.Employee;
+import com.example.employee.exception.DepartmentNotFoundException;
+import com.example.employee.exception.EmployeeNotFoundException;
 import com.example.employee.kafka.KafkaProducerService;
+import com.example.employee.repository.DepartmentRepository;
 import com.example.employee.repository.EmployeeRepository;
+
 
 @Service
 public class EmployeeService {
 
-    private final EmployeeRepository repository;
-    private final KafkaProducerService kafkaProducerService;
+        private final DepartmentRepository departmentRepository;
 
-    public EmployeeService(EmployeeRepository repository,
-                       KafkaProducerService kafkaProducerService) {
-    this.repository = repository;
-    this.kafkaProducerService = kafkaProducerService;
-    }
+        public EmployeeService(EmployeeRepository repository,
+                        DepartmentRepository departmentRepository,
+                        KafkaProducerService kafkaProducerService) {
+        this.repository = repository;
+        this.departmentRepository = departmentRepository;
+        this.kafkaProducerService = kafkaProducerService;
+        }
 
-    public Employee getEmployee(Long id) {
-    return repository.findById(id).orElse(null);
-    }
+        private final EmployeeRepository repository;
+        private final KafkaProducerService kafkaProducerService;
 
-    public List<Employee> getAllEmployees() {
-    return repository.findAll();
-    }
+        public EmployeeResponseDTO getEmployee(Long id) {
 
-    public Employee saveEmployee(Employee employee) {
+        Employee employee = repository.findById(id)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException("Employee not found"));
 
-    Employee savedEmployee = repository.save(employee);
+        return mapToResponse(employee);
+        }
 
-    kafkaProducerService.sendEmployee(savedEmployee);
+        public Page<EmployeeResponseDTO> getAllEmployees(Pageable pageable) {
 
-    return savedEmployee;
-    }
+        return repository.findAll(pageable)
+                .map(this::mapToResponse);
+        }
 
-    public String deleteEmployee(Long id) {
+        public EmployeeResponseDTO saveEmployee(EmployeeRequestDTO dto) {
 
-    if (!repository.existsById(id)) {
-        return "Employee not found";
-    }
+        Employee employee = mapToEmployee(dto);
 
-    repository.deleteById(id);
+        Employee savedEmployee = repository.save(employee);
 
-    return "Employee deleted successfully";
-    }
+        kafkaProducerService.sendEmployee(savedEmployee);
 
-    public Employee updateEmployee(Long id, Employee employee) {
+        return mapToResponse(savedEmployee);
+        }
 
-    Employee existingEmployee = repository.findById(id)
-            .orElse(null);
+        public String deleteEmployee(Long id) {
 
-    if (existingEmployee == null) {
-        return null;
-    }
+        if (!repository.existsById(id)) {
+        throw new EmployeeNotFoundException("Employee not found");
+        }
 
-    existingEmployee.setName(employee.getName());
-    existingEmployee.setDepartment(employee.getDepartment());
+        repository.deleteById(id);
 
-    return repository.save(existingEmployee);
-    }
+        return "Employee deleted successfully";
+        }
 
-    public List<Employee> getEmployees(String department) {
-        return repository.findByDepartment_Name(department);
-    }
+        public EmployeeResponseDTO updateEmployee(Long id, EmployeeRequestDTO dto) {
 
-    public List<Employee> getEmployeesByDepartment(String department) {
-    return repository.findByDepartment_Name(department);
-    }
+        Department department = departmentRepository.findById(dto.getDepartmentId())
+        .orElseThrow(() ->
+                new DepartmentNotFoundException("Department not found"));
+
+        Employee existingEmployee = repository.findById(id)
+        .orElseThrow(() ->
+                new EmployeeNotFoundException("Employee not found"));
+
+        existingEmployee.setName(dto.getName());
+        existingEmployee.setDepartment(department);
+
+        Employee updated = repository.save(existingEmployee);
+
+        return mapToResponse(updated);
+        }
+
+        public List<EmployeeResponseDTO> getEmployeesByDepartment(String department) {
+
+        return repository.findByDepartment_Name(department)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+        }
+
+        private Employee mapToEmployee(EmployeeRequestDTO dto) {
+
+        Department department = departmentRepository.findById(dto.getDepartmentId())
+                .orElseThrow(() ->
+                        new DepartmentNotFoundException("Department not found"));
+
+        Employee employee = new Employee();
+
+        employee.setName(dto.getName());
+        employee.setDepartment(department);
+
+        return employee;
+        }
+
+        private EmployeeResponseDTO mapToResponse(Employee employee) {
+
+        EmployeeResponseDTO dto = new EmployeeResponseDTO();
+
+        dto.setId(employee.getId());
+        dto.setName(employee.getName());
+        if (employee.getDepartment() != null) {
+        dto.setDepartment(employee.getDepartment().getName());
+}
+        return dto;
+        }
 
 }

@@ -1,5 +1,6 @@
 package com.example.employee.controller;
 import java.util.List;
+import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,8 +11,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.example.employee.dto.EmployeeRequestDTO;
+import com.example.employee.dto.EmployeeResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import com.example.employee.entity.Employee;
 import com.example.employee.service.EmployeeService;
 
 @RestController
@@ -25,29 +29,22 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public Employee getEmployee(@PathVariable Long id) {
+    public EmployeeResponseDTO getEmployee(@PathVariable Long id) {
         return service.getEmployee(id);
     }
 
     @GetMapping
-    public List<Employee> getAllEmployees() {
-        return service.getAllEmployees();
+    public Page<EmployeeResponseDTO> getAllEmployees(Pageable pageable) {
+
+        return service.getAllEmployees(pageable);
     }
 
     @PutMapping("/{id}")
-    public Employee updateEmployee(
+    public EmployeeResponseDTO updateEmployee(
             @PathVariable Long id,
-            @RequestBody Employee employee) {
+            @Valid @RequestBody EmployeeRequestDTO dto) {
 
-        return service.updateEmployee(id, employee);
-    }
-
-    @GetMapping("/{department}/{id}")
-    public String getEmployeeByDepartment(
-            @PathVariable String department,
-            @PathVariable Long id) {
-
-        return department + " " + id;
+        return service.updateEmployee(id, dto);
     }
 
     @GetMapping("/search")
@@ -64,8 +61,10 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public Employee saveEmployee(@RequestBody Employee employee) {
-        return service.saveEmployee(employee);
+    public EmployeeResponseDTO save(
+            @Valid @RequestBody EmployeeRequestDTO dto) {
+
+        return service.saveEmployee(dto);
     }
 
     @DeleteMapping("/{id}")
@@ -74,16 +73,9 @@ public class EmployeeController {
     }
 
     @GetMapping("/department/{department}")
-    public List<Employee> getEmployeesByDepartment(
+    public List<EmployeeResponseDTO> getEmployeesByDepartment(
             @PathVariable String department) {
 
         return service.getEmployeesByDepartment(department);
-    }
-
-    @GetMapping("/department2/{department}")
-    public List<Employee> getEmployees(
-            @PathVariable String department) {
-
-        return service.getEmployees(department);
-    }   
+    } 
 }
